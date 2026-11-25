@@ -80,7 +80,7 @@ const $=id=>document.getElementById(id), cv=$('cv'), ctx=cv.getContext('2d'), hb
 cv.width=W;cv.height=H;
 function rs(){const s=Math.min(innerWidth/W,innerHeight/H);cv.style.width=W*s+'px';cv.style.height=H*s+'px';const r=cv.getBoundingClientRect();const z=r.width*.031;// icone sul tetto della torre campanaria (angolo alto a destra dello sfondo)
  hb.style.left=(r.left+r.width*.905)+'px';hb.style.top=(r.top+r.height*.022)+'px';hb.style.gap=z*.15+'px';const tm=$('tm'),tf=$('tf');tm.style.width=tm.style.height=tf.style.width=tf.style.height=z+'px';tm.style.padding=tf.style.padding='0'}
-addEventListener('resize',rs);rs();
+addEventListener('resize',rs);addEventListener('orientationchange',()=>{rs();setTimeout(rs,150);setTimeout(rs,600)});addEventListener('pageshow',rs);addEventListener('load',rs);if(window.visualViewport)visualViewport.addEventListener('resize',rs);rs();[60,250,700,1500,3000].forEach(t=>setTimeout(rs,t));setInterval(rs,1000);
 /* ===== ASSET (un errore non blocca mai il gioco) ===== */
 const IM={},NM=[];
 ['title_0','title_wall'].forEach(n=>{const i=new Image();i.onload=()=>{IM[n]=i;if(n==='title_0')tbDone()};i.onerror=()=>{console.warn('missing asset: '+n);if(n==='title_0')tbDone()};i.src='img/'+n+'.webp'});
@@ -95,7 +95,9 @@ function ax(){if(!AX&&AC){try{AX=new AC();AX.onstatechange=()=>{if(AX.state==='r
 function kickA(){WAS.forEach(w=>{if(w._want&&!w.playing)w._start().catch(()=>{})});try{musicSync()}catch(e){}}
 function unlockA(){const c=ax();if(!c)return;try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}if(c.state!=='running'){const p=c.resume();if(p&&p.catch)p.catch(()=>{})}if(!unlockA.d){unlockA.d=1;try{const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start(0)}catch(e){}}}
 ['pointerdown','pointerup','touchstart','touchend','click','keydown','mousedown'].forEach(e=>addEventListener(e,unlockA,{passive:true,capture:true}));
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)unlockA()});
+function bgStop(){try{if(typeof togglePause==='function'&&!paused&&['play','clear','bonus','intro','outro'].includes(st))togglePause()}catch(e){}try{if(AX&&AX.state==='running'){const p=AX.suspend();if(p&&p.catch)p.catch(()=>{})}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)bgStop();else unlockA()});
+addEventListener('pagehide',bgStop);
 function getBuf(urls){const k=urls.join('|');if(BUF[k])return BUF[k];return BUF[k]=(async()=>{const c=ax();if(!c)return null;for(const u of urls){try{const r=await fetch(u);if(!r.ok)continue;const ab=await r.arrayBuffer();return await new Promise((ok,ko)=>{const p=c.decodeAudioData(ab,ok,ko);if(p&&p.catch)p.catch(ko)})}catch(e){}}return null})()}
 class WA{
  constructor(urls,o={}){this.urls=urls;this.loop=!!o.loop;this._vol=o.vol==null?1:o.vol;this.buf=null;this.src=null;this.g=null;this.off=0;this.t0=0;this.playing=false;this.ended=false;this.onended=null;this._want=false;WAS.add(this);if(!o.lazy)this.load()}
@@ -129,7 +131,7 @@ let HM=null,hT=0;try{HM=new WA(['audio/musica_highscore.m4a'],{lazy:1,vol:.7});H
 const LASTP={};setTimeout(()=>{try{INTROM&&INTROM.load();HM&&HM.load()}catch(e){}},2500);
 function play(n){if(!opt.fx||!SND[n])return;const now=performance.now();if(now-(LASTP[n]||0)<60)return;LASTP[n]=now;try{SND[n].fire()}catch(e){}}
 function stopFx(){ACT.forEach(a=>{try{a.onended=null;a.stop()}catch(e){}});ACT.clear()}
-function musicSync(){try{if(JG){if(st==='title'||st==='info'||st==='credits'){if(opt.mus&&JG.paused)jingle();else if(!opt.mus)JG.pause()}else JG.pause()}const hm=st==='over'||st==='entry'||st==='hs';if(HM){if(opt.mus&&hm){if(HM.paused&&!HM.ended)HM.play().catch(()=>{})}else HM.pause()}const go=opt.mus&&st!=='title'&&st!=='info'&&st!=='credits'&&st!=='intro'&&st!=='outro'&&st!=='nr'&&!hm;if(music){if(go)music.play().catch(()=>{});else music.pause()}
+function musicSync(){try{if(JG){if(st==='title'||st==='info'||st==='credits'){if(opt.mus&&JG.paused)jingle();else if(!opt.mus)JG.pause()}else JG.pause()}const hm=st==='over'||st==='entry'||st==='hs';if(HM){if(opt.mus&&hm){if(HM.paused&&!HM.ended)HM.play().catch(()=>{})}else HM.pause()}const go=opt.mus&&!paused&&st!=='title'&&st!=='info'&&st!=='credits'&&st!=='intro'&&st!=='outro'&&st!=='nr'&&!hm;if(music){if(go)music.play().catch(()=>{});else music.pause()}
  if(INTROM){if(opt.mus&&st==='intro')INTROM.play().catch(()=>{});else INTROM.pause()}}catch(e){}}
 $('tm').onclick=()=>{opt.mus=!opt.mus;$('tm').classList.toggle('off',!opt.mus);musicSync()};
 $('tf').onclick=()=>{opt.fx=!opt.fx;$('tf').classList.toggle('off',!opt.fx)};
@@ -155,7 +157,7 @@ function jSet(){const d=jDim(),axx=Math.abs(jtx)/d.R,ay=d.V?Math.abs(jty)/d.V:0;
  if(nl&&!jL)padNav('l');if(nr&&!jR)padNav('r');if(nu&&!jU)padNav('u');if(nd&&!jD)padNav('d');
  jL=nl?1:0;jR=nr?1:0;jU=nu?1:0;jD=nd?1:0;touch.l=jL;touch.r=jR;touch.u=jU;touch.d=jD;JK.classList.toggle('eng',!!(jL||jR||jU||jD))}
 function jReset(){jp=null;jtx=jty=0;jSet()}
-JS.addEventListener('pointerdown',e=>{if(jp!==null)return;e.preventDefault();jp=e.pointerId;jox=e.clientX-jx;joy=e.clientY-jy;try{JS.setPointerCapture(e.pointerId)}catch(x){}});
+JS.addEventListener('pointerdown',e=>{e.preventDefault();jp=e.pointerId;jox=e.clientX-jx;joy=e.clientY-jy;try{JS.setPointerCapture(e.pointerId)}catch(x){}});
 JS.addEventListener('pointermove',e=>{if(e.pointerId!==jp)return;e.preventDefault();const d=jDim();let rx=e.clientX-jox,ry=e.clientY-joy;
  if(rx>d.R){jox=e.clientX-d.R;rx=d.R}else if(rx<-d.R){jox=e.clientX+d.R;rx=-d.R}
  if(d.V){if(ry>d.V){joy=e.clientY-d.V;ry=d.V}else if(ry<-d.V){joy=e.clientY+d.V;ry=-d.V}}else ry=0;
@@ -163,7 +165,11 @@ JS.addEventListener('pointermove',e=>{if(e.pointerId!==jp)return;e.preventDefaul
 ['pointerup','pointercancel'].forEach(t=>JS.addEventListener(t,e=>{if(e.pointerId===jp)jReset()}));
 JS.addEventListener('lostpointercapture',e=>{if(e.pointerId===jp)jReset()});
 JS.addEventListener('contextmenu',e=>e.preventDefault());
-(function jAnim(now){const dt=Math.min(.05,(now-jLast)/1000||.016);jLast=now;const k=1-Math.exp(-dt*(jp!==null?42:15));jx+=(jtx-jx)*k;jy+=(jty-jy)*k;if(Math.abs(jx)<.05&&!jtx)jx=0;if(Math.abs(jy)<.05&&!jty)jy=0;
+// rete di sicurezza: se iOS perde un pointerup, al primo fine-tocco senza dita sulla levetta/JUMP si rilascia tutto
+const jIn=(el,l)=>[...l].some(t=>el.contains(t.target));
+['touchend','touchcancel'].forEach(t=>addEventListener(t,e=>{if(jp!==null&&!jIn(JS,e.touches))jReset();const jb=document.querySelector('#pad .jump');if(touch.j&&!jIn(jb,e.touches)){touch.j=0;jb.classList.remove('on')}},{capture:true,passive:true}));
+['pointerup','pointercancel'].forEach(t=>addEventListener(t,e=>{if(e.pointerId===jp)jReset()},{capture:true,passive:true}));
+(function jAnim(now){const dt=Math.min(.05,(now-jLast)/1000||.016);jLast=now;const k=1-Math.exp(-dt*(jp!==null?42:15));if(jp===null&&(jL||jR||jU||jD))jSet();jx+=(jtx-jx)*k;jy+=(jty-jy)*k;if(Math.abs(jx)<.05&&!jtx)jx=0;if(Math.abs(jy)<.05&&!jty)jy=0;
  JK.style.transform='translate3d('+jx.toFixed(2)+'px,'+jy.toFixed(2)+'px,0)';requestAnimationFrame(jAnim)})(0);
 function jMode(sb){if(sb===jSB)return;jSB=sb;JS.classList.toggle('sb',sb);if(!sb){jty=0;jSet()}}
 document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
@@ -543,7 +549,7 @@ $('lvsel').addEventListener('change',e=>{if(st==='title')return;loadLevel(+e.tar
 if(TEST_MODE)$('dbg').style.display='block';
 cur=LV[0];P=newP();C=newC();
 let paused=false,pausedAud=[];
-function togglePause(){if(!paused){if(!['play','clear','bonus','intro','outro'].includes(st))return;paused=true;clearIn();pausedAud=[music,INTROM,HM,JG,CORD].filter(a=>a&&!a.paused);pausedAud.forEach(a=>{try{a.pause()}catch(e){}});drawPause()}else{paused=false;pausedAud.forEach(a=>{try{a.play().catch(()=>{})}catch(e){}});pausedAud=[];last=performance.now()}}
+function togglePause(){if(!paused){if(!['play','clear','bonus','intro','outro'].includes(st))return;paused=true;clearIn();pausedAud=[music,INTROM,HM,JG,CORD].filter(a=>a&&!a.paused);pausedAud.forEach(a=>{try{a.pause()}catch(e){}});drawPause()}else{paused=false;pausedAud.forEach(a=>{try{a.play().catch(()=>{})}catch(e){}});pausedAud=[];last=performance.now();try{musicSync()}catch(e){}}}
 function drawPause(){ctx.save();ctx.fillStyle='rgba(0,0,0,.38)';ctx.fillRect(0,0,W,H);const bw=46,bh=150,gp=36,y0=cur.sb?419:330;ctx.lineJoin='round';
  for(const x of [W/2-gp/2-bw,W/2+gp/2]){for(let i=11;i>0;i--){ctx.fillStyle=i>7?'#3d2504':i>3?'#5b3a0a':'#7a4d10';ctx.fillRect(x+i*.8,y0+i,bw,bh)}ctx.lineWidth=5;ctx.strokeStyle='#2a1803';ctx.strokeRect(x,y0,bw,bh);ctx.fillStyle=goldGrad(y0,bh);ctx.fillRect(x,y0,bw,bh);ctx.lineWidth=2;ctx.strokeStyle='rgba(255,248,210,.6)';ctx.strokeRect(x-1,y0-1,bw,bh)}ctx.restore()}
 function loop(now){if(paused){last=now;requestAnimationFrame(loop);return}const dt=Math.min((now-last)/1000,.05);last=now;clk+=dt;try{poll();upd(dt);draw()}catch(e){console.error(e)}requestAnimationFrame(loop)}
