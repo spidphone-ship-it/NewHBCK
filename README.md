@@ -1,4 +1,4 @@
-# HUNCHBACK
+# HUNCHBACK inspired by a glorious Commodore C=64 old game
 
 A browser remake of the classic **Commodore 64** platformer *The Hunchback* — rebuilt with modern, hand-polished graphics, 16-bit-style animation and sound, while keeping the original's simple, brutal, one-button-jump gameplay.
 
